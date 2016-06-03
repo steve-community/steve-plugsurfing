@@ -1,7 +1,6 @@
 ![SteVe](src/main/resources/webapp/static/images/logo.png) 
 
-[![Build Status](https://travis-ci.org/RWTH-i5-IDSG/steve.svg)](https://travis-ci.org/RWTH-i5-IDSG/steve)
-[![Coverity Status](https://scan.coverity.com/projects/6601/badge.svg)](https://scan.coverity.com/projects/rwth-i5-idsg-steve)
+[![Build Status](https://travis-ci.org/RWTH-i5-IDSG/steve-plugsurfing.svg)](https://travis-ci.org/RWTH-i5-IDSG/steve-plugsurfing)
 
 
 # Introduction
@@ -48,7 +47,7 @@ SteVe is designed to run standalone, a java servlet container / web server (e.g.
 
     You can download and extract the SteVe releases using the following commands (replace X.X.X with the desired version number):
     ```
-    wget https://github.com/RWTH-i5-IDSG/steve/archive/steve-X.X.X.tar.gz
+    wget https://github.com/RWTH-i5-IDSG/steve-plugsurfing/archive/steve-X.X.X.tar.gz
     tar xzvf steve-X.X.X.tar.gz
     cd steve-X.X.X
     ```
