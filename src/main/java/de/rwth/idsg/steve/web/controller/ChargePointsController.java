@@ -22,7 +22,7 @@ import javax.validation.Valid;
  * @author Sevket Goekay <goekay@dbis.rwth-aachen.de>
  *
  */
-@Controller
+//@Controller
 @RequestMapping(value = "/manager/chargepoints")
 public class ChargePointsController {
 
@@ -66,7 +66,7 @@ public class ChargePointsController {
         model.addAttribute("cpList", chargePointRepository.getOverview(params));
     }
 
-    @RequestMapping(value = DETAILS_PATH, method = RequestMethod.GET)
+    //@RequestMapping(value = DETAILS_PATH, method = RequestMethod.GET)
     public String getDetails(@PathVariable("chargeBoxPk") int chargeBoxPk, Model model) {
         ChargePoint.Details cp = chargePointRepository.getDetails(chargeBoxPk);
 
@@ -87,7 +87,7 @@ public class ChargePointsController {
         return "data-man/chargepointDetails";
     }
 
-    @RequestMapping(value = ADD_PATH, method = RequestMethod.GET)
+    //@RequestMapping(value = ADD_PATH, method = RequestMethod.GET)
     public String addGet(Model model) {
         model.addAttribute("chargePointForm", new ChargePointForm());
         model.addAttribute("batchChargePointForm", new ChargePointBatchInsertForm());
@@ -95,7 +95,7 @@ public class ChargePointsController {
         return "data-man/chargepointAdd";
     }
 
-    @RequestMapping(params = "add", value = ADD_SINGLE_PATH, method = RequestMethod.POST)
+    //@RequestMapping(params = "add", value = ADD_SINGLE_PATH, method = RequestMethod.POST)
     public String addSinglePost(@Valid @ModelAttribute("chargePointForm") ChargePointForm chargePointForm,
                                 BindingResult result, Model model) {
         if (result.hasErrors()) {
@@ -108,7 +108,7 @@ public class ChargePointsController {
         return toOverview();
     }
 
-    @RequestMapping(value = ADD_BATCH_PATH, method = RequestMethod.POST)
+    //@RequestMapping(value = ADD_BATCH_PATH, method = RequestMethod.POST)
     public String addBatchPost(@Valid @ModelAttribute("batchChargePointForm") ChargePointBatchInsertForm form,
                                BindingResult result, Model model) {
         if (result.hasErrors()) {
@@ -121,7 +121,7 @@ public class ChargePointsController {
         return toOverview();
     }
 
-    @RequestMapping(params = "update", value = UPDATE_PATH, method = RequestMethod.POST)
+    //@RequestMapping(params = "update", value = UPDATE_PATH, method = RequestMethod.POST)
     public String update(@Valid @ModelAttribute("chargePointForm") ChargePointForm chargePointForm,
                          BindingResult result, Model model) {
         if (result.hasErrors()) {
@@ -133,7 +133,7 @@ public class ChargePointsController {
         return toOverview();
     }
 
-    @RequestMapping(value = DELETE_PATH, method = RequestMethod.POST)
+    //@RequestMapping(value = DELETE_PATH, method = RequestMethod.POST)
     public String delete(@PathVariable("chargeBoxPk") int chargeBoxPk) {
         chargePointRepository.deleteChargePoint(chargeBoxPk);
         return toOverview();

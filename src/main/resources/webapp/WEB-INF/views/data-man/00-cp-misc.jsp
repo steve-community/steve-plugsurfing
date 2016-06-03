@@ -16,9 +16,4 @@
 	</c:if>
 
 	<tr><td>Additional Note:</td><td><form:textarea path="note"/></td></tr>
-	<tr><td></td>
-		<td id="add_space">
-			<input type="submit" name="${submitButtonName}" value="${submitButtonValue}">
-			<input type="submit" name="backToOverview" value="Back to Overview">
-		</td></tr>
 </table>

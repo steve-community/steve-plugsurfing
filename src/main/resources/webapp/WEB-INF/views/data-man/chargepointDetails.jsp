@@ -55,7 +55,10 @@
             <c:set var="submitButtonName" value="update" />
             <c:set var="submitButtonValue" value="Update" />
             <%@ include file="00-cp-misc.jsp" %>
+            <%@ include file="ps-station.jsp" %>
+            <%@ include file="ps-contact.jsp" %>
 
+            <%@ include file="submitForm.jsp"%>
     </form:form>
 </div></div>
 <%@ include file="../00-footer.jsp" %>
