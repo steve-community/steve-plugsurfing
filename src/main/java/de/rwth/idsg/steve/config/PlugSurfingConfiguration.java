@@ -1,10 +1,11 @@
 package de.rwth.idsg.steve.config;
 
-import de.rwth.idsg.steve.extensions.plugsurfing.ApiKeyHeaderInterceptor;
+import com.google.common.base.Optional;
+import de.rwth.idsg.steve.extensions.plugsurfing.interceptor.ClientApiKeyHeaderInterceptor;
 import de.rwth.idsg.steve.extensions.plugsurfing.ClientLogInterceptor;
 import de.rwth.idsg.steve.extensions.plugsurfing.Constants;
 import de.rwth.idsg.steve.extensions.plugsurfing.PsApiJsonParser;
-import org.springframework.beans.factory.annotation.Autowired;
+import de.rwth.idsg.steve.extensions.plugsurfing.interceptor.ResourceApiKeyHeaderInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
@@ -27,8 +28,6 @@ import java.util.List;
 @Configuration
 public class PlugSurfingConfiguration extends WebMvcConfigurerAdapter {
 
-    @Autowired private ApiKeyHeaderInterceptor apiKeyHeaderInterceptor;
-
     @Override
     public void configureMessageConverters(final List<HttpMessageConverter<?>> converters) {
         // In-going serialization
@@ -37,9 +36,11 @@ public class PlugSurfingConfiguration extends WebMvcConfigurerAdapter {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        Optional<String> optionalApiKey = Constants.CONFIG.getStevePsApiKey();
+
         // Register only if the property is set
-        if (Constants.CONFIG.getStevePsApiKey().isPresent()) {
-            registry.addInterceptor(apiKeyHeaderInterceptor)
+        if (optionalApiKey.isPresent()) {
+            registry.addInterceptor(new ResourceApiKeyHeaderInterceptor(optionalApiKey.get()))
                     .addPathPatterns("/ps-api/**");
         }
     }
@@ -47,7 +48,7 @@ public class PlugSurfingConfiguration extends WebMvcConfigurerAdapter {
     @Bean
     public RestTemplate normalTemplate() {
         List<ClientHttpRequestInterceptor> interceptors = new ArrayList<>();
-        interceptors.add(apiKeyHeaderInterceptor);
+        interceptors.add(new ClientApiKeyHeaderInterceptor());
         interceptors.add(new ClientLogInterceptor());
 
         // Out-going serialization
