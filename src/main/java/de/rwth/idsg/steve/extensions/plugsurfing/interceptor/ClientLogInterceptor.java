@@ -1,4 +1,4 @@
-package de.rwth.idsg.steve.extensions.plugsurfing;
+package de.rwth.idsg.steve.extensions.plugsurfing.interceptor;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpRequest;

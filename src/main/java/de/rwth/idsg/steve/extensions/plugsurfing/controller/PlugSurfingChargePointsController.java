@@ -45,7 +45,7 @@ public class PlugSurfingChargePointsController extends ChargePointsController {
         form.setAddress(ControllerHelper.recordToDto(cp.getAddress()));
 
         PsChargeboxRecord stationRecord = stationRepository.getPlugSurfingStationRecord(chargeBoxPk);
-        if(stationRecord != null) {
+        if (stationRecord != null) {
             setPlugSurfingUI(form, stationRecord);
         }
         model.addAttribute("chargePointForm", form);
@@ -96,7 +96,7 @@ public class PlugSurfingChargePointsController extends ChargePointsController {
 
     @RequestMapping(params = "update", value = UPDATE_PATH, method = RequestMethod.POST)
     public String update(@Valid @ModelAttribute("chargePointForm") StationForm chargePointForm,
-                        BindingResult result, Model model) {
+                         BindingResult result, Model model) {
         if (result.hasErrors()) {
             addCountryCodes(model);
             return "data-man/chargepointDetails";

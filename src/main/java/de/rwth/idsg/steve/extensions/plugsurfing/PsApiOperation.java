@@ -20,7 +20,6 @@ public enum PsApiOperation {
     private final String value;
     private final Class<? extends BaseRequest> objectClazz;
 
-
     public static PsApiOperation fromValue(String v) {
         for (PsApiOperation c : PsApiOperation.values()) {
             if (c.value.equals(v)) {

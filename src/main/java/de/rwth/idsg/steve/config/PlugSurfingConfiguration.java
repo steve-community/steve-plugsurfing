@@ -2,7 +2,7 @@ package de.rwth.idsg.steve.config;
 
 import com.google.common.base.Optional;
 import de.rwth.idsg.steve.extensions.plugsurfing.interceptor.ClientApiKeyHeaderInterceptor;
-import de.rwth.idsg.steve.extensions.plugsurfing.ClientLogInterceptor;
+import de.rwth.idsg.steve.extensions.plugsurfing.interceptor.ClientLogInterceptor;
 import de.rwth.idsg.steve.extensions.plugsurfing.Constants;
 import de.rwth.idsg.steve.extensions.plugsurfing.PsApiJsonParser;
 import de.rwth.idsg.steve.extensions.plugsurfing.interceptor.ResourceApiKeyHeaderInterceptor;
