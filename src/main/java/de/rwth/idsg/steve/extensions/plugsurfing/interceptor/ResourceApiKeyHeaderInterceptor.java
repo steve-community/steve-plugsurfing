@@ -29,6 +29,17 @@ public class ResourceApiKeyHeaderInterceptor extends HandlerInterceptorAdapter {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
                              Object handler) throws Exception {
 
+        switch (request.getDispatcherType()) {
+            case REQUEST:
+                return preHandleInternal(request, response);
+            default:
+                break;
+        }
+
+        return super.preHandle(request, response, handler);
+    }
+
+    private boolean preHandleInternal(HttpServletRequest request, HttpServletResponse response) {
         String value = request.getHeader(HEADER_KEY);
 
         if (isValid(value)) {
