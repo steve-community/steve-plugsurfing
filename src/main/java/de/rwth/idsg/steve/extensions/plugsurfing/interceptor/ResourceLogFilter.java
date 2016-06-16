@@ -1,5 +1,6 @@
 package de.rwth.idsg.steve.extensions.plugsurfing.interceptor;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -32,34 +33,59 @@ public class ResourceLogFilter extends OncePerRequestFilter {
     private AtomicInteger counter = new AtomicInteger(0);
 
     @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false;
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        request = new RequestWrapper(request);
-        response = new ResponseWrapper(response);
+        Integer id = null;
+
+        if (!(request instanceof RequestWrapper)) {
+            id = counter.incrementAndGet();
+            request = new RequestWrapper(request, id);
+        }
+
+        if (!(response instanceof ResponseWrapper)) {
+            response = new ResponseWrapper(response, id);
+        }
 
         try {
             filterChain.doFilter(request, response);
         } finally {
-            int id = counter.incrementAndGet();
-            logRequest(id, request);
-            logResponse(id, response);
+            switch (request.getDispatcherType()) {
+                case REQUEST:
+                    logRequest(request);
+                    if (!request.isAsyncStarted()) {
+                        logResponse(response);
+                    }
+                    break;
+
+                case ASYNC:
+                    logResponse(response);
+                    break;
+
+                default:
+                    break;
+            }
         }
     }
 
-    private void logRequest(int id, HttpServletRequest request) {
+    private void logRequest(HttpServletRequest request) {
         if (request instanceof RequestWrapper) {
             RequestWrapper wrap = (RequestWrapper) request;
             String s = new String(wrap.toByteArray(), StandardCharsets.UTF_8);
-            log.info("Ps Request [correlationId={}] : {}", id, s);
+            log.info("Ps Request [correlationId={}] : {}", wrap.getId(), s);
         }
     }
 
-    private void logResponse(int id, HttpServletResponse response) {
+    private void logResponse(HttpServletResponse response) {
         if (response instanceof ResponseWrapper) {
             ResponseWrapper wrap = (ResponseWrapper) response;
             String s = new String(wrap.toByteArray(), StandardCharsets.UTF_8);
-            log.info("Ps Response [correlationId={}]: {}", id, s);
+            log.info("Ps Response [correlationId={}]: {}", wrap.getId(), s);
         }
     }
 
@@ -71,8 +97,11 @@ public class ResourceLogFilter extends OncePerRequestFilter {
 
         private final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
-        RequestWrapper(HttpServletRequest request) throws IOException {
+        @Getter private final int id;
+
+        RequestWrapper(HttpServletRequest request, int id) throws IOException {
             super(request);
+            this.id = id;
         }
 
         @Override
@@ -90,8 +119,11 @@ public class ResourceLogFilter extends OncePerRequestFilter {
         private final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         private final PrintWriter writer = new PrintWriter(bos);
 
-        ResponseWrapper(HttpServletResponse response) {
+        @Getter private final int id;
+
+        ResponseWrapper(HttpServletResponse response, Integer id) {
             super(response);
+            this.id = id;
         }
 
         @Override
