@@ -39,8 +39,9 @@ public class PlugSurfingConfiguration extends WebMvcConfigurerAdapter {
 
     @PostConstruct
     private void init() {
-        FilterRegistration logFilter = servletContext.addFilter("psLogFilter", new ResourceLogFilter());
+        FilterRegistration.Dynamic logFilter = servletContext.addFilter("psLogFilter", new ResourceLogFilter());
         logFilter.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/ps-api/*");
+        logFilter.setAsyncSupported(true);
     }
 
     @Override
