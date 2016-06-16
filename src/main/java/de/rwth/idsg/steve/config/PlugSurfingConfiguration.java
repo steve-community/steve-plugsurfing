@@ -6,6 +6,8 @@ import de.rwth.idsg.steve.extensions.plugsurfing.interceptor.ClientLogIntercepto
 import de.rwth.idsg.steve.extensions.plugsurfing.Constants;
 import de.rwth.idsg.steve.extensions.plugsurfing.PsApiJsonParser;
 import de.rwth.idsg.steve.extensions.plugsurfing.interceptor.ResourceApiKeyHeaderInterceptor;
+import de.rwth.idsg.steve.extensions.plugsurfing.interceptor.ResourceLogFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.BufferingClientHttpRequestFactory;
@@ -17,8 +19,13 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
+import javax.annotation.PostConstruct;
+import javax.servlet.DispatcherType;
+import javax.servlet.FilterRegistration;
+import javax.servlet.ServletContext;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 
 /**
@@ -27,6 +34,14 @@ import java.util.List;
  */
 @Configuration
 public class PlugSurfingConfiguration extends WebMvcConfigurerAdapter {
+
+    @Autowired private ServletContext servletContext;
+
+    @PostConstruct
+    private void init() {
+        FilterRegistration logFilter = servletContext.addFilter("psLogFilter", new ResourceLogFilter());
+        logFilter.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/ps-api/*");
+    }
 
     @Override
     public void configureMessageConverters(final List<HttpMessageConverter<?>> converters) {
