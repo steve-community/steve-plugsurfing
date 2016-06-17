@@ -41,7 +41,7 @@ public class ResourceLogFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        Integer id = null;
+        int id = -1;
 
         if (!(request instanceof RequestWrapper)) {
             id = counter.incrementAndGet();
@@ -57,13 +57,18 @@ public class ResourceLogFilter extends OncePerRequestFilter {
         } finally {
             switch (request.getDispatcherType()) {
                 case REQUEST:
+                    // After receiving the request
                     logRequest(request);
-                    if (!request.isAsyncStarted()) {
+
+                    // This is the case, when we cannot validate the request and send an error response back,
+                    // before even communicating with a charging station.
+                    if (!isAsyncStarted(request)) {
                         logResponse(response);
                     }
                     break;
 
                 case ASYNC:
+                    // After receiving the response from the charging station and having mapped it to a PS response
                     logResponse(response);
                     break;
 
@@ -121,7 +126,7 @@ public class ResourceLogFilter extends OncePerRequestFilter {
 
         @Getter private final int id;
 
-        ResponseWrapper(HttpServletResponse response, Integer id) {
+        ResponseWrapper(HttpServletResponse response, int id) {
             super(response);
             this.id = id;
         }
