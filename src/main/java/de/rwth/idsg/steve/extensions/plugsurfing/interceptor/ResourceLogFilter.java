@@ -82,7 +82,7 @@ public class ResourceLogFilter extends OncePerRequestFilter {
         if (request instanceof RequestWrapper) {
             RequestWrapper wrap = (RequestWrapper) request;
             String s = new String(wrap.toByteArray(), StandardCharsets.UTF_8);
-            log.info("Ps Request [correlationId={}] : {}", wrap.getId(), s);
+            log.info("[CorrelationId:{}] PS Request: {}", wrap.getId(), s);
         }
     }
 
@@ -90,7 +90,7 @@ public class ResourceLogFilter extends OncePerRequestFilter {
         if (response instanceof ResponseWrapper) {
             ResponseWrapper wrap = (ResponseWrapper) response;
             String s = new String(wrap.toByteArray(), StandardCharsets.UTF_8);
-            log.info("Ps Response [correlationId={}]: {}", wrap.getId(), s);
+            log.info("[CorrelationId:{}] PS Response: {}", wrap.getId(), s);
         }
     }
 
