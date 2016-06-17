@@ -19,7 +19,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Logs HTTP request/response bodies
@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class ResourceLogFilter extends OncePerRequestFilter {
 
-    private AtomicInteger counter = new AtomicInteger(0);
+    private AtomicLong counter = new AtomicLong(0);
 
     @Override
     protected boolean shouldNotFilterAsyncDispatch() {
@@ -41,7 +41,7 @@ public class ResourceLogFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        int id = -1;
+        long id = -1;
 
         if (!(request instanceof RequestWrapper)) {
             id = counter.incrementAndGet();
@@ -102,9 +102,9 @@ public class ResourceLogFilter extends OncePerRequestFilter {
 
         private final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
-        @Getter private final int id;
+        @Getter private final long id;
 
-        RequestWrapper(HttpServletRequest request, int id) throws IOException {
+        RequestWrapper(HttpServletRequest request, long id) throws IOException {
             super(request);
             this.id = id;
         }
@@ -124,9 +124,9 @@ public class ResourceLogFilter extends OncePerRequestFilter {
         private final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         private final PrintWriter writer = new PrintWriter(bos);
 
-        @Getter private final int id;
+        @Getter private final long id;
 
-        ResponseWrapper(HttpServletResponse response, int id) {
+        ResponseWrapper(HttpServletResponse response, long id) {
             super(response);
             this.id = id;
         }

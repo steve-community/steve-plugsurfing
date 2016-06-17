@@ -21,13 +21,13 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ClientLogInterceptor implements ClientHttpRequestInterceptor {
 
     private static final String PREFIX_FORMAT = "[CorrelationId:%d]";
-    private final AtomicLong id = new AtomicLong(0);
+    private final AtomicLong counter = new AtomicLong(0);
 
     @Override
     public ClientHttpResponse intercept(HttpRequest request, byte[] body,
                                         ClientHttpRequestExecution execution) throws IOException {
 
-        String prefix = String.format(PREFIX_FORMAT, id.incrementAndGet());
+        String prefix = String.format(PREFIX_FORMAT, counter.incrementAndGet());
 
         logRequest(prefix, body);
         ClientHttpResponse response = execution.execute(request, body);
