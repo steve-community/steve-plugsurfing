@@ -1,5 +1,6 @@
 package de.rwth.idsg.steve.extensions.plugsurfing.interceptor;
 
+import de.rwth.idsg.steve.extensions.plugsurfing.AsyncHttpWrapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -26,7 +27,9 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author Sevket Goekay <goekay@dbis.rwth-aachen.de>
  * @since 16.06.2016
+ * @deprecated because we log requests and responses in our custom wrapper now {@link AsyncHttpWrapper}
  */
+@Deprecated
 @Slf4j
 public class ResourceLogFilter extends OncePerRequestFilter {
 
