@@ -1,6 +1,7 @@
 package de.rwth.idsg.steve.extensions.plugsurfing.service;
 
 import de.rwth.idsg.steve.extensions.plugsurfing.Constants;
+import de.rwth.idsg.steve.extensions.plugsurfing.AsyncHttpWrapper;
 import de.rwth.idsg.steve.extensions.plugsurfing.dto.ExternalChargePointSelect;
 import de.rwth.idsg.steve.extensions.plugsurfing.model.send.response.SessionStartResponse;
 import de.rwth.idsg.steve.extensions.plugsurfing.model.send.response.SessionStopResponse;
@@ -23,7 +24,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.async.DeferredResult;
+
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author Vasil Borozanov <vasil.borozanov@rwth-aachen.de>
@@ -38,10 +40,11 @@ public class PlugSurfingOcpp12Mediator {
     @Autowired private ChargePointService12_Dispatcher dispatcher12;
     @Autowired private OcppExternalTagRepository ocppRepository;
     @Autowired private SessionRepository sessionRepository;
+    @Autowired private ScheduledExecutorService executorService;
 
     public void processStartTransaction(String rfid,
                                         ExternalChargePointSelect selectInfo,
-                                        DeferredResult<ResponseEntity<SessionStartResponse>> response) {
+                                        AsyncHttpWrapper wrapper) {
 
         OcppCallback<RemoteStartTransactionResponse> callback = new OcppCallback<RemoteStartTransactionResponse>() {
 
@@ -82,9 +85,7 @@ public class PlugSurfingOcpp12Mediator {
             }
 
             private void finish(SessionStartResponse ack) {
-                ResponseEntity<SessionStartResponse> responseEntity =
-                        new ResponseEntity<>(ack, HttpStatus.OK);
-                response.setResult(responseEntity);
+                wrapper.finishSuccess(ack);
             }
         };
 
@@ -103,14 +104,14 @@ public class PlugSurfingOcpp12Mediator {
         handler.addCallback(callback);
 
         requestTaskStore.add(task);
-        dispatcher12.remoteStartTransaction(selectInfo.getSelect(), handler);
-
+        wrapper.startAsync();
+        executorService.execute(() -> dispatcher12.remoteStartTransaction(selectInfo.getSelect(), handler));
     }
 
 
     public void processStopTransaction(int transactionPk,
                                        ExternalChargePointSelect selectInfo,
-                                       DeferredResult<ResponseEntity<SessionStopResponse>> response) {
+                                       AsyncHttpWrapper wrapper) {
 
         OcppCallback<RemoteStopTransactionResponse> callback = new OcppCallback<RemoteStopTransactionResponse>() {
 
@@ -138,9 +139,7 @@ public class PlugSurfingOcpp12Mediator {
             }
 
             private void finish(SessionStopResponse ack) {
-                ResponseEntity<SessionStopResponse> responseEntity =
-                        new ResponseEntity<>(ack, HttpStatus.OK);
-                response.setResult(responseEntity);
+                wrapper.finishSuccess(ack);
             }
         };
 
@@ -158,7 +157,7 @@ public class PlugSurfingOcpp12Mediator {
         handler.addCallback(callback);
 
         requestTaskStore.add(task);
-        dispatcher12.remoteStopTransaction(selectInfo.getSelect(), handler);
-
+        wrapper.startAsync();
+        executorService.execute(() -> dispatcher12.remoteStopTransaction(selectInfo.getSelect(), handler));
     }
 }

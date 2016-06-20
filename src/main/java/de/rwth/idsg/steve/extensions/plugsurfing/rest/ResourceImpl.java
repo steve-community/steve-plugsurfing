@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import de.rwth.idsg.steve.SteveException;
+import de.rwth.idsg.steve.extensions.plugsurfing.AsyncHttpWrapper;
 import de.rwth.idsg.steve.extensions.plugsurfing.PsApiException;
 import de.rwth.idsg.steve.extensions.plugsurfing.PsApiJsonParser;
 import de.rwth.idsg.steve.extensions.plugsurfing.PsApiOperation;
@@ -11,8 +12,6 @@ import de.rwth.idsg.steve.extensions.plugsurfing.dto.ExternalChargePointSelect;
 import de.rwth.idsg.steve.extensions.plugsurfing.model.ErrorResponse;
 import de.rwth.idsg.steve.extensions.plugsurfing.model.receive.request.SessionStart;
 import de.rwth.idsg.steve.extensions.plugsurfing.model.receive.request.SessionStop;
-import de.rwth.idsg.steve.extensions.plugsurfing.model.send.response.SessionStartResponse;
-import de.rwth.idsg.steve.extensions.plugsurfing.model.send.response.SessionStopResponse;
 import de.rwth.idsg.steve.extensions.plugsurfing.repository.OcppExternalTagRepository;
 import de.rwth.idsg.steve.extensions.plugsurfing.repository.SessionRepository;
 import de.rwth.idsg.steve.extensions.plugsurfing.repository.StationRepository;
@@ -23,21 +22,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.async.DeferredResult;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Sevket Goekay <goekay@dbis.rwth-aachen.de>
@@ -55,6 +53,7 @@ public class ResourceImpl implements Resource {
     @Autowired private Validator validator;
 
     private static final Joiner JOINER = Joiner.on(", ");
+    private final AtomicLong counter = new AtomicLong(0);
 
     @Override
     @RequestMapping(
@@ -63,9 +62,11 @@ public class ResourceImpl implements Resource {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             method = RequestMethod.POST
     )
-    public DeferredResult<?> dispatch(HttpServletRequest request) {
+    public void dispatch(HttpServletRequest request, HttpServletResponse response) {
+        AsyncHttpWrapper wrapper = new AsyncHttpWrapper(request, response, counter.incrementAndGet());
+
         try {
-            String messageBody = StreamUtils.copyToString(request.getInputStream(), StandardCharsets.UTF_8);
+            String messageBody = wrapper.parseRequestBody();
 
             try (JsonParser parser = PsApiJsonParser.SINGLETON.getMapper().getFactory().createParser(messageBody)) {
                 parser.nextToken();
@@ -74,29 +75,32 @@ public class ResourceImpl implements Resource {
                 String operationName = parser.getCurrentName();
                 PsApiOperation operation = PsApiOperation.fromValue(operationName);
 
-                return dispatchInternal(operation, messageBody);
+                dispatchInternal(wrapper, operation, messageBody);
             }
-        } catch (IOException e) {
-            throw new PsApiException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (Throwable e) {
+            wrapper.finishExceptionally(e);
         }
     }
 
-    private DeferredResult<?> dispatchInternal(PsApiOperation operation, String messageBody) throws IOException {
+    private void dispatchInternal(AsyncHttpWrapper wrapper, PsApiOperation operation, String messageBody)
+            throws IOException {
         switch (operation) {
             case SESSION_START:
                 SessionStart start = PsApiJsonParser.SINGLETON.deserialize(messageBody, operation.getObjectClazz());
-                return sessionStart(start);
+                sessionStart(wrapper, start);
+                break;
 
             case SESSION_STOP:
                 SessionStop stop = PsApiJsonParser.SINGLETON.deserialize(messageBody, operation.getObjectClazz());
-                return sessionStop(stop);
+                sessionStop(wrapper, stop);
+                break;
 
             default:
                 throw new PsApiException("Unknown operation", HttpStatus.BAD_REQUEST);
         }
     }
 
-    private DeferredResult<ResponseEntity<SessionStartResponse>> sessionStart(SessionStart request) {
+    private void sessionStart(AsyncHttpWrapper wrapper, SessionStart request) {
 
         validate(request);
 
@@ -110,19 +114,17 @@ public class ResourceImpl implements Resource {
         int connectorPK = Integer.valueOf(request.getConnectorPrimaryKey());
         ExternalChargePointSelect selectInfo = getExternalChargePointSelect(connectorPK);
 
-        final DeferredResult<ResponseEntity<SessionStartResponse>> response = new DeferredResult<>();
         switch (selectInfo.getVersion()) {
             case V_12:
-                ocpp12Mediator.processStartTransaction(rfid, selectInfo, response);
+                ocpp12Mediator.processStartTransaction(rfid, selectInfo, wrapper);
                 break;
             case V_15:
-                ocpp15Mediator.processStartTransaction(rfid, selectInfo, response);
+                ocpp15Mediator.processStartTransaction(rfid, selectInfo, wrapper);
                 break;
         }
-        return response;
     }
 
-    private DeferredResult<ResponseEntity<SessionStopResponse>> sessionStop(SessionStop request) {
+    private void sessionStop(AsyncHttpWrapper wrapper, SessionStop request) {
 
         validate(request);
 
@@ -156,16 +158,14 @@ public class ResourceImpl implements Resource {
             throw new PsApiException("Connector identifier doesn't match the given session", HttpStatus.UNAUTHORIZED);
         }
 
-        final DeferredResult<ResponseEntity<SessionStopResponse>> response = new DeferredResult<>();
         switch (selectInfo.getVersion()) {
             case V_12:
-                ocpp12Mediator.processStopTransaction(transactionPk, selectInfo, response);
+                ocpp12Mediator.processStopTransaction(transactionPk, selectInfo, wrapper);
                 break;
             case V_15:
-                ocpp15Mediator.processStopTransaction(transactionPk, selectInfo, response);
+                ocpp15Mediator.processStopTransaction(transactionPk, selectInfo, wrapper);
                 break;
         }
-        return response;
     }
 
     // -------------------------------------------------------------------------
