@@ -10,11 +10,13 @@ import de.rwth.idsg.steve.extensions.plugsurfing.PsApiJsonParser;
 import de.rwth.idsg.steve.extensions.plugsurfing.PsApiOperation;
 import de.rwth.idsg.steve.extensions.plugsurfing.dto.ExternalChargePointSelect;
 import de.rwth.idsg.steve.extensions.plugsurfing.model.ErrorResponse;
+import de.rwth.idsg.steve.extensions.plugsurfing.model.data.User;
 import de.rwth.idsg.steve.extensions.plugsurfing.model.receive.request.SessionStart;
 import de.rwth.idsg.steve.extensions.plugsurfing.model.receive.request.SessionStop;
 import de.rwth.idsg.steve.extensions.plugsurfing.repository.OcppExternalTagRepository;
 import de.rwth.idsg.steve.extensions.plugsurfing.repository.SessionRepository;
 import de.rwth.idsg.steve.extensions.plugsurfing.repository.StationRepository;
+import de.rwth.idsg.steve.extensions.plugsurfing.service.EvcoIdService;
 import de.rwth.idsg.steve.extensions.plugsurfing.service.PlugSurfingOcpp12Mediator;
 import de.rwth.idsg.steve.extensions.plugsurfing.service.PlugSurfingOcpp15Mediator;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +52,7 @@ public class ResourceImpl implements Resource {
     @Autowired private PlugSurfingOcpp15Mediator ocpp15Mediator;
     @Autowired private SessionRepository sessionRepository;
     @Autowired private OcppExternalTagRepository ocppExternalTagRepository;
+    @Autowired private EvcoIdService evcoIdService;
     @Autowired private Validator validator;
 
     private static final Joiner JOINER = Joiner.on(", ");
@@ -104,7 +107,7 @@ public class ResourceImpl implements Resource {
 
         validate(request);
 
-        String rfid = request.getUser().getIdentifier();
+        String rfid = getRfid(request.getUser());
         boolean hasOngoingSession = !sessionRepository.hasNoSession(rfid);
 
         if (hasOngoingSession) {
@@ -128,7 +131,7 @@ public class ResourceImpl implements Resource {
 
         validate(request);
 
-        String rfid = request.getUser().getIdentifier();
+        String rfid = getRfid(request.getUser());
         boolean isNotExternal = !ocppExternalTagRepository.isExternal(rfid);
 
         if (isNotExternal) {
@@ -196,6 +199,20 @@ public class ResourceImpl implements Resource {
             String errors = JOINER.join(errorMessages);
             String msg = "Validation failed: " + errors;
             throw new PsApiException(msg, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private String getRfid(User user) {
+        switch (user.getIdentifierType()) {
+            case EVCO_ID:
+                return evcoIdService.getOcppIdTag(user.getIdentifier());
+
+            case RFID:
+                return user.getIdentifier();
+
+            default:
+                // Cannot happen
+                throw new PsApiException("Unknown identifier-type", HttpStatus.BAD_REQUEST);
         }
     }
 

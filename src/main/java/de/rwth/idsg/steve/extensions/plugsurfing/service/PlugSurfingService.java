@@ -40,6 +40,7 @@ public class PlugSurfingService {
     @Autowired private StationRepository stationRepository;
     @Autowired private Client restClient;
     @Autowired private ScheduledExecutorService executorService;
+    @Autowired private EvcoIdService evcoIdService;
 
     public void asyncHandleStatusNotification(String chargeBoxId, int connectorId, ConnectorStatus cs) {
         executorService.execute(() -> handleStatusNotification(chargeBoxId, connectorId, cs));
@@ -244,9 +245,16 @@ public class PlugSurfingService {
     private void callClient(int sessionId, int transactionPK, String rfid, boolean isStop) {
         int connectorPK = connectorRepositroy.getConnectorPkFromTransactionPk(transactionPK);
 
-        User rfidUser = new User();
-        rfidUser.setIdentifierType(IdentifierType.RFID);
-        rfidUser.setIdentifier(rfid);
+        User user = new User();
+
+        Optional<String> optionalEvcoId = evcoIdService.getEvcoId(rfid);
+        if (optionalEvcoId.isPresent()) {
+            user.setIdentifierType(IdentifierType.EVCO_ID);
+            user.setIdentifier(optionalEvcoId.get());
+        } else {
+            user.setIdentifierType(IdentifierType.RFID);
+            user.setIdentifier(rfid);
+        }
 
         // Set Session interval
         TransactionRecord transaction = sessionRepository.getTransaction(transactionPK);
@@ -265,7 +273,7 @@ public class PlugSurfingService {
         // make sure: connector pk
         sessionRequest.setConnectorPrimaryKey(String.valueOf(connectorPK));
 
-        sessionRequest.setUser(rfidUser);
+        sessionRequest.setUser(user);
         sessionRequest.setSessionInterval(sessionTimePeriod);
 
         restClient.sessionPost(sessionRequest);

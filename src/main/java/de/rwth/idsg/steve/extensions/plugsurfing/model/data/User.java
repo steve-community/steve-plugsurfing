@@ -8,6 +8,9 @@ import org.hibernate.validator.constraints.NotEmpty;
 import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.NotNull;
 
+import static de.rwth.idsg.steve.extensions.plugsurfing.model.data.IdentifierType.EVCO_ID;
+import static de.rwth.idsg.steve.extensions.plugsurfing.model.data.IdentifierType.RFID;
+
 /**
  * @author Sevket Goekay <goekay@dbis.rwth-aachen.de>
  * @since 02.09.2015
@@ -25,8 +28,8 @@ public class User {
 
     private String token;
 
-    @AssertTrue(message = "only the identifier-type 'rfid' is supported")
+    @AssertTrue(message = "only the identifier-types 'rfid' and 'evco-id' is supported")
     public boolean isValidType() {
-        return identifierType != null && identifierType == IdentifierType.RFID;
+        return identifierType != null && (identifierType == RFID || identifierType == EVCO_ID);
     }
 }
