@@ -20,6 +20,7 @@ import de.rwth.idsg.steve.extensions.plugsurfing.repository.StationRepository;
 import de.rwth.idsg.steve.extensions.plugsurfing.rest.Client;
 import de.rwth.idsg.steve.extensions.plugsurfing.utils.StationUtils;
 import jooq.steve.db.tables.records.TransactionRecord;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -245,16 +246,7 @@ public class PlugSurfingService {
     private void callClient(int sessionId, int transactionPK, String rfid, boolean isStop) {
         int connectorPK = connectorRepositroy.getConnectorPkFromTransactionPk(transactionPK);
 
-        User user = new User();
-
-        Optional<String> optionalEvcoId = evcoIdService.getEvcoId(rfid);
-        if (optionalEvcoId.isPresent()) {
-            user.setIdentifierType(IdentifierType.EVCO_ID);
-            user.setIdentifier(optionalEvcoId.get());
-        } else {
-            user.setIdentifierType(IdentifierType.RFID);
-            user.setIdentifier(rfid);
-        }
+        User user = buildUserObject(rfid);
 
         // Set Session interval
         TransactionRecord transaction = sessionRepository.getTransaction(transactionPK);
@@ -277,6 +269,41 @@ public class PlugSurfingService {
         sessionRequest.setSessionInterval(sessionTimePeriod);
 
         restClient.sessionPost(sessionRequest);
+    }
+
+    public void postExpiredSession(int sessionId, int connectorPK, String rfid, DateTime start) {
+
+        User user = buildUserObject(rfid);
+
+        TimePeriod sessionTimePeriod = new TimePeriod();
+        sessionTimePeriod.setStart(start);
+        sessionTimePeriod.setStop(DateTime.now());
+
+        SessionPost sessionRequest = new SessionPost();
+        sessionRequest.setSessionId(String.valueOf(sessionId));
+        sessionRequest.setEnergyConsumed(0d);
+        sessionRequest.setUser(user);
+        sessionRequest.setSessionInterval(sessionTimePeriod);
+
+        // make sure: connector pk
+        sessionRequest.setConnectorPrimaryKey(String.valueOf(connectorPK));
+
+        restClient.sessionPost(sessionRequest);
+    }
+
+    private User buildUserObject(String rfid) {
+        User user = new User();
+
+        Optional<String> optionalEvcoId = evcoIdService.getEvcoId(rfid);
+        if (optionalEvcoId.isPresent()) {
+            user.setIdentifierType(IdentifierType.EVCO_ID);
+            user.setIdentifier(optionalEvcoId.get());
+        } else {
+            user.setIdentifierType(IdentifierType.RFID);
+            user.setIdentifier(rfid);
+        }
+
+        return user;
     }
 
     private void postStationInternal(String chargeBoxIdentity, List<Integer> discoveredConns) {

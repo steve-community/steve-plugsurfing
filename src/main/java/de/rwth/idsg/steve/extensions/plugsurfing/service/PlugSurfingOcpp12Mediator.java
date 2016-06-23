@@ -20,6 +20,7 @@ import ocpp.cp._2010._08.RemoteStartTransactionRequest;
 import ocpp.cp._2010._08.RemoteStartTransactionResponse;
 import ocpp.cp._2010._08.RemoteStopTransactionRequest;
 import ocpp.cp._2010._08.RemoteStopTransactionResponse;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +42,7 @@ public class PlugSurfingOcpp12Mediator {
     @Autowired private OcppExternalTagRepository ocppRepository;
     @Autowired private SessionRepository sessionRepository;
     @Autowired private ScheduledExecutorService executorService;
+    @Autowired private SessionExpireService sessionExpireService;
 
     public void processStartTransaction(String rfid,
                                         ExternalChargePointSelect selectInfo,
@@ -60,7 +62,9 @@ public class PlugSurfingOcpp12Mediator {
                         //mark as external in DB
                         int ocppTagPk = ocppRepository.addOrIgnoreIfPresent(rfid);
                         ocppRepository.setInSessionTrue(rfid);
-                        String sessionId = sessionRepository.addSessionWithoutTransactionPK(selectInfo.getConnectorPk(), ocppTagPk);
+                        DateTime start = DateTime.now();
+                        String sessionId = sessionRepository.addSessionWithoutTransactionPK(selectInfo.getConnectorPk(), ocppTagPk, start);
+                        sessionExpireService.registerCheck(rfid, sessionId, selectInfo.getConnectorPk(), start);
                         // Fill the values
                         ack.setIsStoppable(true);
                         ack.setSuccess(true);

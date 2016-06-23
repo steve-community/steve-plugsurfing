@@ -3,6 +3,8 @@ package de.rwth.idsg.steve.extensions.plugsurfing.repository.impl;
 import com.google.common.base.Optional;
 import de.rwth.idsg.steve.extensions.plugsurfing.repository.SessionRepository;
 import jooq.steve.db.tables.records.TransactionRecord;
+import lombok.extern.slf4j.Slf4j;
+import org.joda.time.DateTime;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,16 +18,33 @@ import static jooq.steve.db.tables.Transaction.TRANSACTION;
  * @author Vasil Borozanov <vasil.borozanov@rwth-aachen.de>
  * @since 15.01.2016
  */
+@Slf4j
 @Repository
 public class SessionRepositoryImpl implements SessionRepository {
 
     @Autowired private DSLContext ctx;
 
+    private enum SessionStatus {
+        // when session was started and used. default starting point.
+        ACTIVE,
+        // when session was started but not used (cable not plugged in i.e. no StartTransaction arrived).
+        // status is changed from active to expired after a waiting period.
+        // see de.rwth.idsg.steve.extensions.plugsurfing.service.SessionExpireService
+        EXPIRED
+    }
+
     @Override
     public String addSessionWithoutTransactionPK(int connectorPK, int ocppTagPK) {
+        return addSessionWithoutTransactionPK(connectorPK, ocppTagPK, DateTime.now());
+    }
+
+    @Override
+    public String addSessionWithoutTransactionPK(int connectorPK, int ocppTagPK, DateTime eventTimestamp) {
         int pk = ctx.insertInto(PS_SESSION)
                     .set(PS_SESSION.CONNECTOR_PK, connectorPK)
                     .set(PS_SESSION.OCPP_TAG_PK, ocppTagPK)
+                    .set(PS_SESSION.EVENT_TIMESTAMP, eventTimestamp)
+                    .set(PS_SESSION.EVENT_STATUS, SessionStatus.ACTIVE.name())
                     .returning(PS_SESSION.PS_SESSION_PK)
                     .fetchOne()
                     .getPsSessionPk();
@@ -42,6 +61,28 @@ public class SessionRepositoryImpl implements SessionRepository {
            .and(PS_SESSION.CONNECTOR_PK.eq(connectorPK))
            .and(PS_SESSION.TRANSACTION_PK.isNull())
            .execute();
+    }
+
+    @Override
+    public boolean expireSession(int sessionId) {
+        int count = ctx.update(PS_SESSION)
+                       .set(PS_SESSION.EVENT_STATUS, SessionStatus.EXPIRED.name())
+                       .where(PS_SESSION.PS_SESSION_PK.eq(sessionId))
+                       .and(PS_SESSION.TRANSACTION_PK.isNull())
+                       .execute();
+
+        if (count == 0) {
+            return false;
+
+        } else if (count == 1) {
+            return true;
+
+        } else {
+            log.warn(
+                    "Multiple session records were found and have been expired for session id '{}'! This is not good.",
+                    sessionId);
+            return true;
+        }
     }
 
     @Override
@@ -97,6 +138,7 @@ public class SessionRepositoryImpl implements SessionRepository {
                                                                          .from(OCPP_TAG)
                                                                          .where(OCPP_TAG.ID_TAG.eq(rfid))))
                                      .and(PS_SESSION.TRANSACTION_PK.isNull())
+                                     .and(PS_SESSION.EVENT_STATUS.notEqual(SessionStatus.EXPIRED.name()))
                                      .fetchOne();
 
         return record == null;
