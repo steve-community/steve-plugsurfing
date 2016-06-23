@@ -1,18 +1,14 @@
 package de.rwth.idsg.steve.extensions.plugsurfing.service;
 
-import de.rwth.idsg.steve.extensions.plugsurfing.Constants;
 import de.rwth.idsg.steve.extensions.plugsurfing.AsyncHttpWrapper;
-import de.rwth.idsg.steve.extensions.plugsurfing.PsApiJsonParser;
+import de.rwth.idsg.steve.extensions.plugsurfing.Constants;
 import de.rwth.idsg.steve.extensions.plugsurfing.dto.ExternalChargePointSelect;
 import de.rwth.idsg.steve.extensions.plugsurfing.model.send.response.SessionStartResponse;
 import de.rwth.idsg.steve.extensions.plugsurfing.model.send.response.SessionStopResponse;
-import de.rwth.idsg.steve.extensions.plugsurfing.repository.OcppExternalTagRepository;
-import de.rwth.idsg.steve.extensions.plugsurfing.repository.SessionRepository;
 import de.rwth.idsg.steve.handler.OcppCallback;
 import de.rwth.idsg.steve.handler.ocpp15.RemoteStartTransactionResponseHandler;
 import de.rwth.idsg.steve.handler.ocpp15.RemoteStopTransactionResponseHandler;
 import de.rwth.idsg.steve.ocpp.OcppVersion;
-import de.rwth.idsg.steve.repository.RequestTaskStore;
 import de.rwth.idsg.steve.service.ChargePointService15_Dispatcher;
 import de.rwth.idsg.steve.web.dto.task.ExternalRequestTask;
 import lombok.extern.slf4j.Slf4j;
@@ -21,14 +17,8 @@ import ocpp.cp._2012._06.RemoteStartTransactionRequest;
 import ocpp.cp._2012._06.RemoteStartTransactionResponse;
 import ocpp.cp._2012._06.RemoteStopTransactionRequest;
 import ocpp.cp._2012._06.RemoteStopTransactionResponse;
-import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author Vasil Borozanov <vasil.borozanov@rwth-aachen.de>
@@ -36,15 +26,10 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 @Slf4j
 @Service
-public class PlugSurfingOcpp15Mediator {
+public class PlugSurfingOcpp15Mediator extends PlugSurfingOcppAbstractMediator {
     private static final OcppVersion VERSION = OcppVersion.V_15;
 
-    @Autowired private RequestTaskStore requestTaskStore;
     @Autowired private ChargePointService15_Dispatcher dispatcher15;
-    @Autowired private OcppExternalTagRepository ocppRepository;
-    @Autowired private SessionRepository sessionRepository;
-    @Autowired private ScheduledExecutorService executorService;
-    @Autowired private SessionExpireService sessionExpireService;
 
     public void processStartTransaction(String rfid,
                                         ExternalChargePointSelect selectInfo,
@@ -61,12 +46,8 @@ public class PlugSurfingOcpp15Mediator {
                 //Respond with Http PlugSurfing Codes
                 switch (status) {
                     case ACCEPTED:
-                        //mark as external in DB
-                        int ocppTagPk = ocppRepository.addOrIgnoreIfPresent(rfid);
-                        ocppRepository.setInSessionTrue(rfid);
-                        DateTime start = DateTime.now();
-                        String sessionId = sessionRepository.addSessionWithoutTransactionPK(selectInfo.getConnectorPk(), ocppTagPk, start);
-                        sessionExpireService.registerCheck(rfid, sessionId, selectInfo.getConnectorPk(), start);
+                        String sessionId = handleAcceptedStartTransaction(rfid, selectInfo);
+
                         // Fill the values
                         ack.setIsStoppable(true);
                         ack.setSuccess(true);
