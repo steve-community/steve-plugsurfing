@@ -20,9 +20,25 @@ public class EvcoIdService {
     private static final String HASH_FUNCTION_NAME = "SHA-256";
     private static final HashFunction HASH_FUNCTION = Hashing.sha256();
 
+    private static final Object LOCK = new Object();
+
     @Autowired private EvcoIdRepository evcoIdRepository;
 
     public String getOcppIdTag(String evcoId) {
+        synchronized (LOCK) {
+            return getOcppIdTagInternal(evcoId);
+        }
+    }
+
+    public Optional<String> getEvcoId(String rfid) {
+        return evcoIdRepository.getEvcoId(rfid);
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    private String getOcppIdTagInternal(String evcoId) {
         Optional<String> optional = evcoIdRepository.getOcppIdTag(evcoId);
 
         // This is not the first time we encounter this evco-id, and have the relevant data already in db
@@ -36,14 +52,6 @@ public class EvcoIdService {
 
         return ocppIdTag;
     }
-
-    public Optional<String> getEvcoId(String rfid) {
-        return evcoIdRepository.getEvcoId(rfid);
-    }
-
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
 
     private static String stringToHash(String arg) {
         HashCode hc = HASH_FUNCTION.hashString(arg, Charsets.UTF_8);
