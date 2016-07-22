@@ -1,26 +1,27 @@
-package de.rwth.idsg.steve.extensions.plugsurfing.service;
+package de.rwth.idsg.steve.extensions.plugsurfing.service.extend;
 
+import de.rwth.idsg.steve.extensions.plugsurfing.service.PlugSurfingService;
 import de.rwth.idsg.steve.extensions.plugsurfing.utils.ConnectorStatusConverter;
-import de.rwth.idsg.steve.service.CentralSystemService15_Service;
-import ocpp.cs._2012._06.AuthorizeRequest;
-import ocpp.cs._2012._06.AuthorizeResponse;
-import ocpp.cs._2012._06.StartTransactionRequest;
-import ocpp.cs._2012._06.StartTransactionResponse;
-import ocpp.cs._2012._06.StatusNotificationRequest;
-import ocpp.cs._2012._06.StatusNotificationResponse;
-import ocpp.cs._2012._06.StopTransactionRequest;
-import ocpp.cs._2012._06.StopTransactionResponse;
+import de.rwth.idsg.steve.service.CentralSystemService12_Service;
+import ocpp.cs._2010._08.AuthorizeRequest;
+import ocpp.cs._2010._08.AuthorizeResponse;
+import ocpp.cs._2010._08.StartTransactionRequest;
+import ocpp.cs._2010._08.StartTransactionResponse;
+import ocpp.cs._2010._08.StatusNotificationRequest;
+import ocpp.cs._2010._08.StatusNotificationResponse;
+import ocpp.cs._2010._08.StopTransactionRequest;
+import ocpp.cs._2010._08.StopTransactionResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 /**
  * @author Vasil Borozanov <vasil.borozanov@rwth-aachen.de>
- * @since 03.02.2016
+ * @since 29.01.2016
  */
 @Service
 @Primary
-public class PlugSurfingCSS15Service extends CentralSystemService15_Service {
+public class PlugSurfingCSS12Service extends CentralSystemService12_Service {
 
     @Autowired private PlugSurfingService plugSurfingService;
 
@@ -77,4 +78,5 @@ public class PlugSurfingCSS15Service extends CentralSystemService15_Service {
 
         return response;
     }
+
 }

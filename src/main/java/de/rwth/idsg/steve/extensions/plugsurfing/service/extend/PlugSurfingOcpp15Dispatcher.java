@@ -1,6 +1,7 @@
-package de.rwth.idsg.steve.extensions.plugsurfing.service;
+package de.rwth.idsg.steve.extensions.plugsurfing.service.extend;
 
 import de.rwth.idsg.steve.extensions.plugsurfing.model.data.ConnectorStatus;
+import de.rwth.idsg.steve.extensions.plugsurfing.service.PlugSurfingService;
 import de.rwth.idsg.steve.extensions.plugsurfing.utils.ConnectorStatusConverter;
 import de.rwth.idsg.steve.handler.OcppCallback;
 import de.rwth.idsg.steve.handler.OcppResponseHandler;
