@@ -44,6 +44,9 @@ table.res th {
 	background: #fff;
 	border-bottom: double #CCC;
 }
+table.res th[data-sort] {
+	cursor:pointer;
+}
 table.res tr { border-bottom: 1px solid #CCC; }
 table.res tr:nth-child(odd){ background: #fcfaf2; }
 
@@ -422,4 +425,8 @@ span.formatNumber {
 	font-size: 18px;
 	color: #a36b83;
 	font-weight: bold;
+}
+table.res th.sorting-asc, table.res th.sorting-desc {
+	background: #CCC;
+	border-radius: 5px 5px 0 0;
 }
