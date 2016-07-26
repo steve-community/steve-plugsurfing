@@ -6,8 +6,8 @@ import de.rwth.idsg.steve.ocpp.ws.ocpp12.Ocpp12WebSocketEndpoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.CloseStatus;
-import org.springframework.web.socket.WebSocketSession;
+
+import javax.annotation.PostConstruct;
 
 /**
  * @author Sevket Goekay <goekay@dbis.rwth-aachen.de>
@@ -19,18 +19,19 @@ public class PlugSurfingOcpp12WebSocketEndpoint extends Ocpp12WebSocketEndpoint 
 
     @Autowired private PlugSurfingService plugSurfingService;
 
-    @Override
-    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        super.afterConnectionEstablished(session);
+    @PostConstruct
+    public void init() {
+        super.init();
+
         // Probably, charging station will send connector status info after connecting (which will override this
         // status send with more precise info). But in case it does not, we need to invalidate its "Offline"
         // status we sent after connection close.
-        plugSurfingService.asyncPostStationStatus(getChargeBoxId(session), ConnectorStatus.Available);
-    }
+        registerConnectedCallback(
+                (chargeBoxId) -> plugSurfingService.asyncPostStationStatus(chargeBoxId, ConnectorStatus.Available)
+        );
 
-    @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
-        super.afterConnectionClosed(session, closeStatus);
-        plugSurfingService.asyncPostStationStatus(getChargeBoxId(session), ConnectorStatus.Offline);
+        registerDisconnectedCallback(
+                (chargeBoxId) ->  plugSurfingService.asyncPostStationStatus(chargeBoxId, ConnectorStatus.Offline)
+        );
     }
 }
