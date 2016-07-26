@@ -81,7 +81,12 @@ public class ResourceImpl implements Resource {
                 dispatchInternal(wrapper, operation, messageBody);
             }
         } catch (Throwable e) {
-            wrapper.finishExceptionally(e);
+            log.error("Error occurred", e);
+            try {
+                wrapper.finishExceptionally(e);
+            } catch (Throwable t) {
+                log.error("Error occurred", t);
+            }
         }
     }
 
