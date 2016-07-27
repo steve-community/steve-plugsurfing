@@ -54,6 +54,7 @@ public class SessionExpireService {
             lookupTable.remove(sessionId);
             boolean success = sessionRepository.expireSession(sessionId);
             if (success) {
+                log.info("Session {} was not used, and has been expired/stopped", sessionId);
                 ocppRepository.setInSessionFalse(rfid);
                 plugSurfingService.postExpiredSession(sessionId, connectorPk, rfid, start);
             }
