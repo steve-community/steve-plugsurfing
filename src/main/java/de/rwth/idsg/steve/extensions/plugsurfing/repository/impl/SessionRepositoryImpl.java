@@ -2,6 +2,7 @@ package de.rwth.idsg.steve.extensions.plugsurfing.repository.impl;
 
 import com.google.common.base.Optional;
 import de.rwth.idsg.steve.extensions.plugsurfing.repository.SessionRepository;
+import jooq.steve.db.tables.records.PsSessionRecord;
 import jooq.steve.db.tables.records.TransactionRecord;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -24,7 +25,7 @@ public class SessionRepositoryImpl implements SessionRepository {
 
     @Autowired private DSLContext ctx;
 
-    private enum SessionStatus {
+    public enum SessionStatus {
         // when session was started and used. default starting point.
         ACTIVE,
         // when session was started but not used (cable not plugged in i.e. no StartTransaction arrived).
@@ -86,15 +87,12 @@ public class SessionRepositoryImpl implements SessionRepository {
     }
 
     @Override
-    public Optional<Integer> getTransactionPkFromSessionId(int sessionId) {
-        Record1<Integer> record = ctx.select(PS_SESSION.TRANSACTION_PK)
-                                     .from(PS_SESSION)
-                                     .where(PS_SESSION.PS_SESSION_PK.eq(sessionId))
-                                     .fetchOne();
-        if (record == null) {
-            return Optional.absent();
-        }
-        return Optional.of(record.value1());
+    public Optional<PsSessionRecord> getSessionRecord(int sessionId) {
+        PsSessionRecord record = ctx.selectFrom(PS_SESSION)
+                                    .where(PS_SESSION.PS_SESSION_PK.eq(sessionId))
+                                    .fetchOne();
+
+        return Optional.fromNullable(record);
     }
 
     @Override
@@ -120,7 +118,7 @@ public class SessionRepositoryImpl implements SessionRepository {
         if (record == null) {
             return Optional.absent();
         }
-        return Optional.of(record.value1());
+        return Optional.fromNullable(record.value1());
     }
 
     @Override
@@ -142,17 +140,5 @@ public class SessionRepositoryImpl implements SessionRepository {
                                      .fetchOne();
 
         return record == null;
-    }
-
-    @Override
-    public boolean checkConnectorPk(int connectorPK, int sessionId) {
-        Record1<Integer> record = ctx.select(PS_SESSION.CONNECTOR_PK)
-                                     .from(PS_SESSION)
-                                     .where(PS_SESSION.PS_SESSION_PK.eq(sessionId))
-                                     .fetchOne();
-        if (record == null) {
-            return false;
-        }
-        return connectorPK == record.value1();
     }
 }

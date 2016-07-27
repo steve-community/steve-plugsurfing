@@ -16,9 +16,11 @@ import de.rwth.idsg.steve.extensions.plugsurfing.model.receive.request.SessionSt
 import de.rwth.idsg.steve.extensions.plugsurfing.repository.OcppExternalTagRepository;
 import de.rwth.idsg.steve.extensions.plugsurfing.repository.SessionRepository;
 import de.rwth.idsg.steve.extensions.plugsurfing.repository.StationRepository;
+import de.rwth.idsg.steve.extensions.plugsurfing.repository.impl.SessionRepositoryImpl;
 import de.rwth.idsg.steve.extensions.plugsurfing.service.EvcoIdService;
 import de.rwth.idsg.steve.extensions.plugsurfing.service.PlugSurfingOcpp12Mediator;
 import de.rwth.idsg.steve.extensions.plugsurfing.service.PlugSurfingOcpp15Mediator;
+import jooq.steve.db.tables.records.PsSessionRecord;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -136,36 +138,42 @@ public class ResourceImpl implements Resource {
 
         validate(request);
 
-        String rfid = getRfid(request.getUser());
-        boolean isNotExternal = !ocppExternalTagRepository.isExternal(rfid);
-
-        if (isNotExternal) {
-            throw new PsApiException("No such rfid", HttpStatus.UNAUTHORIZED);
+        int sessionId = Integer.valueOf(request.getSessionId());
+        Optional<PsSessionRecord> optionalRecord = sessionRepository.getSessionRecord(sessionId);
+        if (!optionalRecord.isPresent()) {
+            throw new PsApiException("No such session", HttpStatus.BAD_REQUEST);
         }
 
-        int connectorPK = Integer.valueOf(request.getConnectorPrimaryKey());
-        ExternalChargePointSelect selectInfo = getExternalChargePointSelect(connectorPK);
+        PsSessionRecord sessionRecord = optionalRecord.get();
+        if (SessionRepositoryImpl.SessionStatus.EXPIRED.name().equals(sessionRecord.getEventStatus())) {
+            throw new PsApiException("Session already expired/closed", HttpStatus.BAD_REQUEST);
+        }
 
-        int sessionId = Integer.valueOf(request.getSessionId());
-        Optional<Integer> transactionPKRecord = sessionRepository.getTransactionPkFromSessionId(sessionId);
-
-        if (!transactionPKRecord.isPresent()) {
+        Integer transactionPk = sessionRecord.getTransactionPk();
+        if (transactionPk == null) {
             throw new PsApiException("No transaction for the given session", HttpStatus.BAD_REQUEST);
         }
 
-        int transactionPk = transactionPKRecord.get();
-        boolean isSameRfid = rfid.equals(sessionRepository.getOcppTagOfActiveTransaction(transactionPk));
-
-        if (!isSameRfid) {
-            throw new PsApiException("Wrong rfid", HttpStatus.UNAUTHORIZED);
-        }
-
-        //Check if the connectorPk from request and from the session are matching
-        boolean isSameConnPk = sessionRepository.checkConnectorPk(connectorPK, sessionId);
+        // Check if the connectorPk from request and from the session are matching
+        int connectorPkFromRequest = Integer.valueOf(request.getConnectorPrimaryKey());
+        int connectorPkFromDatabase = sessionRecord.getConnectorPk();
+        boolean isSameConnPk = connectorPkFromRequest == connectorPkFromDatabase;
         if (!isSameConnPk) {
             throw new PsApiException("Connector identifier doesn't match the given session", HttpStatus.UNAUTHORIZED);
         }
 
+        String rfid = getRfid(request.getUser());
+        boolean isNotExternal = !ocppExternalTagRepository.isExternal(rfid);
+        if (isNotExternal) {
+            throw new PsApiException("No such rfid", HttpStatus.UNAUTHORIZED);
+        }
+
+        boolean isSameRfid = rfid.equals(sessionRepository.getOcppTagOfActiveTransaction(transactionPk));
+        if (!isSameRfid) {
+            throw new PsApiException("No active transactions found for given rfid", HttpStatus.UNAUTHORIZED);
+        }
+
+        ExternalChargePointSelect selectInfo = getExternalChargePointSelect(connectorPkFromRequest);
         switch (selectInfo.getVersion()) {
             case V_12:
                 ocpp12Mediator.processStopTransaction(transactionPk, selectInfo, wrapper);

@@ -1,6 +1,7 @@
 package de.rwth.idsg.steve.extensions.plugsurfing.repository;
 
 import com.google.common.base.Optional;
+import jooq.steve.db.tables.records.PsSessionRecord;
 import jooq.steve.db.tables.records.TransactionRecord;
 import org.joda.time.DateTime;
 
@@ -17,7 +18,7 @@ public interface SessionRepository {
 
     boolean expireSession(int sessionId);
 
-    Optional<Integer> getTransactionPkFromSessionId(int sessionId);
+    Optional<PsSessionRecord> getSessionRecord(int sessionId);
 
     String getOcppTagOfActiveTransaction(int transactionPK);
 
@@ -26,6 +27,4 @@ public interface SessionRepository {
     TransactionRecord getTransaction(int transactionPK);
 
     boolean hasNoSession(String rfid);
-
-    boolean checkConnectorPk(int connectorPK, int sessionId);
 }
