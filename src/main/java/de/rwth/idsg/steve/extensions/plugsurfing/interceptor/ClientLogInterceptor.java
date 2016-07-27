@@ -37,12 +37,12 @@ public class ClientLogInterceptor implements ClientHttpRequestInterceptor {
 
     private void logRequest(String prefix, byte[] body) throws IOException {
         String message = getStringMessage(body);
-        log.debug("{} PS Request: payload={}", prefix, message);
+        log.info("{} PS Request: payload={}", prefix, message);
     }
 
     private void logResponse(String prefix, ClientHttpResponse response) throws IOException {
         String message = getStringMessage(response.getBody());
-        log.debug("{} PS Response: statusCode={}; payload={}", prefix, response.getRawStatusCode(), message);
+        log.info("{} PS Response: statusCode={}; payload={}", prefix, response.getRawStatusCode(), message);
     }
 
     private String getStringMessage(InputStream in) throws IOException {
