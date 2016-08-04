@@ -12,6 +12,8 @@ public interface OcppExternalTagRepository {
 
     Optional<Integer> getOcppTagPkForRfid(String rfid);
 
+    boolean isLocal(String rfid);
+
     boolean isExternal(String rfid);
 
     boolean isExternalOrUnknown(String rfid);

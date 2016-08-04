@@ -41,6 +41,19 @@ public class OcppExternalTagRepositoryImpl implements OcppExternalTagRepository 
     }
 
     @Override
+    public boolean isLocal(String rfid) {
+        Record1<Integer> onlyLocal = ctx.selectOne()
+                                        .from(OCPP_TAG)
+                                        .leftOuterJoin(PS_OCPP_TAG)
+                                        .on(OCPP_TAG.OCPP_TAG_PK.eq(PS_OCPP_TAG.OCPP_TAG_PK))
+                                        .where(PS_OCPP_TAG.OCPP_TAG_PK.isNull())
+                                        .and(OCPP_TAG.ID_TAG.eq(rfid))
+                                        .fetchOne();
+
+        return onlyLocal != null;
+    }
+
+    @Override
     public boolean isExternal(String rfid) {
         Record1<Integer> externalAndActive =
                 ctx.select(OCPP_TAG.OCPP_TAG_PK)
@@ -68,15 +81,7 @@ public class OcppExternalTagRepositoryImpl implements OcppExternalTagRepository 
      */
     @Override
     public boolean isExternalOrUnknown(String rfid) {
-        Record1<Integer> onlyLocal = ctx.selectOne()
-                                        .from(OCPP_TAG)
-                                        .leftOuterJoin(PS_OCPP_TAG)
-                                        .on(OCPP_TAG.OCPP_TAG_PK.eq(PS_OCPP_TAG.OCPP_TAG_PK))
-                                        .where(PS_OCPP_TAG.OCPP_TAG_PK.isNull())
-                                        .and(OCPP_TAG.ID_TAG.eq(rfid))
-                                        .fetchOne();
-
-        return (onlyLocal == null);
+        return !isLocal(rfid);
     }
 
     @Override
