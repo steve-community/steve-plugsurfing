@@ -42,7 +42,18 @@ public class OcppExternalTagRepositoryImpl implements OcppExternalTagRepository 
 
     @Override
     public boolean isExternal(String rfid) {
-        return getExternal(rfid) != null;
+        Record1<Integer> externalAndActive =
+                ctx.select(OCPP_TAG.OCPP_TAG_PK)
+                   .from(OCPP_TAG)
+                   .join(PS_OCPP_TAG).on(OCPP_TAG.OCPP_TAG_PK.eq(PS_OCPP_TAG.OCPP_TAG_PK))
+                   .where(OCPP_TAG.ID_TAG.eq(rfid))
+                   // since we mark the user as blocked/unblocked in the ocpp tag table based
+                   // on the response from PS (see PlugSurfingAuthenticator.verifyRfid())
+                   // we need to check this constraint !
+                   .and(OCPP_TAG.BLOCKED.isFalse())
+                   .fetchOne();
+
+        return externalAndActive != null;
     }
 
     /**
@@ -185,18 +196,6 @@ public class OcppExternalTagRepositoryImpl implements OcppExternalTagRepository 
                   .where(PS_OCPP_TAG.OCPP_TAG_PK.eq(ctx.select(OCPP_TAG.OCPP_TAG_PK)
                                                        .from(OCPP_TAG)
                                                        .where(OCPP_TAG.ID_TAG.eq(rfid))))
-                  .fetchOne();
-    }
-
-    private Record1<Integer> getExternal(String rfid) {
-        return ctx.select(OCPP_TAG.OCPP_TAG_PK)
-                  .from(OCPP_TAG)
-                  .join(PS_OCPP_TAG).on(OCPP_TAG.OCPP_TAG_PK.eq(PS_OCPP_TAG.OCPP_TAG_PK))
-                  .where(OCPP_TAG.ID_TAG.eq(rfid))
-                  // since we mark the user as blocked/unblocked in the ocpp tag table based
-                  // on the response from PS (see PlugSurfingAuthenticator.verifyRfid())
-                  // we need to check this constraint !
-                  .and(OCPP_TAG.BLOCKED.isFalse())
                   .fetchOne();
     }
 
