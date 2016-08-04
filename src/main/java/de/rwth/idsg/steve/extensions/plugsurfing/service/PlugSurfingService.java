@@ -195,7 +195,7 @@ public class PlugSurfingService {
     }
 
     private void updateSession(int transactionPk, String chargeBoxId, int connectorId, String rfid) {
-        if (!ocppExternalTagRepository.isExternal(rfid)) {
+        if (ocppExternalTagRepository.isLocal(rfid)) {
             return;
         }
 
