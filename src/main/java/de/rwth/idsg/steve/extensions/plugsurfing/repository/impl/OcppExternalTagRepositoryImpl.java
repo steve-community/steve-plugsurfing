@@ -46,19 +46,26 @@ public class OcppExternalTagRepositoryImpl implements OcppExternalTagRepository 
     }
 
     /**
-     * Either present in both local and roaming tables, or missing from both
+     * local    external    askPs?
+     * 0        0           yes
+     * 0        1           (cannot happen)
+     * 1        0           no
+     * 1        1           yes
+     *
+     * So, we can actually find out whether the rfid is only local, and negate the result
+     * => Either present in both local and roaming tables, or missing from both.
      */
     @Override
     public boolean isExternalOrUnknown(String rfid) {
-        Record1<Integer> record1 = getExternal(rfid);
+        Record1<Integer> onlyLocal = ctx.selectOne()
+                                        .from(OCPP_TAG)
+                                        .leftOuterJoin(PS_OCPP_TAG)
+                                        .on(OCPP_TAG.OCPP_TAG_PK.eq(PS_OCPP_TAG.OCPP_TAG_PK))
+                                        .where(PS_OCPP_TAG.OCPP_TAG_PK.isNull())
+                                        .and(OCPP_TAG.ID_TAG.eq(rfid))
+                                        .fetchOne();
 
-        Record1<Integer> record2 =
-                ctx.select(OCPP_TAG.OCPP_TAG_PK)
-                   .from(OCPP_TAG)
-                   .where(OCPP_TAG.ID_TAG.eq(rfid))
-                   .fetchOne();
-
-        return (record1 == null && record2 == null) || (record1 != null && record2 != null);
+        return (onlyLocal == null);
     }
 
     @Override
