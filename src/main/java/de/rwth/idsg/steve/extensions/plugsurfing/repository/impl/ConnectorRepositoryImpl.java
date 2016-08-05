@@ -10,6 +10,7 @@ import de.rwth.idsg.steve.extensions.plugsurfing.utils.StationUtils;
 import de.rwth.idsg.steve.repository.impl.ChargePointRepositoryImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record1;
@@ -73,27 +74,12 @@ public class ConnectorRepositoryImpl implements ConnectorRepositroy {
 
     @Override
     public List<Integer> getDiscoveredConnPks(String chargeBoxId) {
-        return ctx.selectDistinct(CONNECTOR.CONNECTOR_PK)
-                  .from(CONNECTOR)
-                  .join(CHARGE_BOX).on(CHARGE_BOX.CHARGE_BOX_ID.eq(CONNECTOR.CHARGE_BOX_ID))
-                  .join(PS_CHARGEBOX).on(PS_CHARGEBOX.CHARGE_BOX_PK.eq(CHARGE_BOX.CHARGE_BOX_PK))
-                  .where(CONNECTOR.CHARGE_BOX_ID.eq(chargeBoxId))
-                  .and(CONNECTOR.CONNECTOR_ID.notEqual(0))
-                  .fetch()
-                  .map(Record1::value1);
+        return getDiscoveredConnPks(CONNECTOR.CHARGE_BOX_ID.eq(chargeBoxId));
     }
-
 
     @Override
     public List<Integer> getDiscoveredConnPks(int chargeBoxPk) {
-        return ctx.selectDistinct(CONNECTOR.CONNECTOR_PK)
-                  .from(CONNECTOR)
-                  .join(CHARGE_BOX).on(CHARGE_BOX.CHARGE_BOX_ID.eq(CONNECTOR.CHARGE_BOX_ID))
-                  .join(PS_CHARGEBOX).on(PS_CHARGEBOX.CHARGE_BOX_PK.eq(CHARGE_BOX.CHARGE_BOX_PK))
-                  .where(PS_CHARGEBOX.CHARGE_BOX_PK.eq(chargeBoxPk))
-                  .and(CONNECTOR.CONNECTOR_ID.notEqual(0))
-                  .fetch()
-                  .map(Record1::value1);
+        return getDiscoveredConnPks(PS_CHARGEBOX.CHARGE_BOX_PK.eq(chargeBoxPk));
     }
 
     /**
@@ -142,5 +128,16 @@ public class ConnectorRepositoryImpl implements ConnectorRepositroy {
     private static ConnectorPostStatus buildStatus(int connectorPk, String status) {
         ConnectorStatus cs = ConnectorStatusConverter.getConnectorStatus(status);
         return StationUtils.buildConnectorPostStatus(connectorPk, cs);
+    }
+
+    private List<Integer> getDiscoveredConnPks(Condition chargeBoxSelectCondition) {
+        return ctx.selectDistinct(CONNECTOR.CONNECTOR_PK)
+                  .from(CONNECTOR)
+                  .join(CHARGE_BOX).on(CHARGE_BOX.CHARGE_BOX_ID.eq(CONNECTOR.CHARGE_BOX_ID))
+                  .join(PS_CHARGEBOX).on(PS_CHARGEBOX.CHARGE_BOX_PK.eq(CHARGE_BOX.CHARGE_BOX_PK))
+                  .where(chargeBoxSelectCondition)
+                  .and(CONNECTOR.CONNECTOR_ID.notEqual(0))
+                  .fetch()
+                  .map(Record1::value1);
     }
 }
