@@ -75,6 +75,8 @@ public class ConnectorRepositoryImpl implements ConnectorRepositroy {
     public List<Integer> getDiscoveredConnPks(String chargeBoxId) {
         return ctx.selectDistinct(CONNECTOR.CONNECTOR_PK)
                   .from(CONNECTOR)
+                  .join(CHARGE_BOX).on(CHARGE_BOX.CHARGE_BOX_ID.eq(CONNECTOR.CHARGE_BOX_ID))
+                  .join(PS_CHARGEBOX).on(PS_CHARGEBOX.CHARGE_BOX_PK.eq(CHARGE_BOX.CHARGE_BOX_PK))
                   .where(CONNECTOR.CHARGE_BOX_ID.eq(chargeBoxId))
                   .and(CONNECTOR.CONNECTOR_ID.notEqual(0))
                   .fetch()
