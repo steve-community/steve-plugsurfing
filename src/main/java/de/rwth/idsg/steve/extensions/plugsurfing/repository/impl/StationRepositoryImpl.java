@@ -191,7 +191,7 @@ public class StationRepositoryImpl implements StationRepository {
                        .set(PS_CHARGEBOX.FLOOR_LEVEL, form.getFloorLevel())
                        .set(PS_CHARGEBOX.PHONE, form.getContact().getPhone())
                        .set(PS_CHARGEBOX.FAX, form.getContact().getFax())
-                       .set(PS_CHARGEBOX.WEBSITE, form.getContact().getEmail())
+                       .set(PS_CHARGEBOX.WEBSITE, form.getContact().getWebsite())
                        .set(PS_CHARGEBOX.EMAIL, form.getContact().getEmail())
                        .set(PS_CHARGEBOX.IS_ENABLED, form.getPlugSurfing())
                        .execute();
