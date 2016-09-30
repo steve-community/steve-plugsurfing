@@ -5,9 +5,12 @@ import com.google.common.base.Optional;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import com.google.common.util.concurrent.Striped;
 import de.rwth.idsg.steve.extensions.plugsurfing.repository.EvcoIdRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.concurrent.locks.Lock;
 
 /**
  * @author Sevket Goekay <goekay@dbis.rwth-aachen.de>
@@ -20,13 +23,17 @@ public class EvcoIdService {
     private static final String HASH_FUNCTION_NAME = "SHA-256";
     private static final HashFunction HASH_FUNCTION = Hashing.sha256();
 
-    private static final Object LOCK = new Object();
+    private final Striped<Lock> evcoIdLocks = Striped.lazyWeakLock(20);
 
     @Autowired private EvcoIdRepository evcoIdRepository;
 
     public String getOcppIdTag(String evcoId) {
-        synchronized (LOCK) {
+        Lock l = evcoIdLocks.get(evcoId);
+        l.lock();
+        try {
             return getOcppIdTagInternal(evcoId);
+        } finally {
+            l.unlock();
         }
     }
 
